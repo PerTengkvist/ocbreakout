@@ -1,0 +1,57 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "skills": {
+    "paths": [".opencode/skills"]
+  },
+  "agent": {
+    "orchestrator": {
+      "model": "kvadrat/snabb",
+      "mode": "subagent",
+      "description": "Orkestrerar TDD-exekveringen: dispatchar faser till developer, väntar på PR-granskning och validering, hanterar loop tills varje fas är klar, uppdaterar TDD_STATUS.md. Starta med 'start-orchestration' för att köra alla 15 faser.",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow",
+        "task": "allow",
+        "glob": "allow",
+        "grep": "allow"
+      }
+    },
+    "developer": {
+      "model": "kvadrat/smartast",
+      "mode": "subagent",
+      "description": "Implementerar spelkod enligt TDD-plan. Skriver tester först, sen implementering. Skapar PR per fas via gh CLI. Responderar på granskningskommentarer.",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow",
+        "task": "allow",
+        "glob": "allow",
+        "grep": "allow"
+      }
+    },
+    "reviewer": {
+      "model": "kvadrat/snabb",
+      "mode": "subagent",
+      "description": "Granskar PR med pr-review-skill. Kontrollerar TDD-regler, testcoverage, kravsppårbarhet, kodkvalitet. Returnerar klassificerade kommentarer.",
+      "permission": {
+        "edit": "allow",
+        "bash": {
+          "gh *": "allow",
+          "*": "deny"
+        },
+        "glob": "allow",
+        "grep": "allow"
+      }
+    },
+    "validator": {
+      "model": "kvadrat/snabb",
+      "mode": "subagent",
+      "description": "Skapar och kör smoketester/integrationstester. Validerar att implementationen uppfyller breakout_spec.md. Rapporterar PASS/FAIL per kravtagg.",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow",
+        "glob": "allow",
+        "grep": "allow"
+      }
+    }
+  }
+}
