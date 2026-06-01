@@ -8,8 +8,8 @@
 | 2 | Game Loop & Canvas | ✅ PR #2 | feat/phase-2-game-loop | ✅ MERGED | ✅ APPROVED | ✅ VALIDATED |
 | 3 | Paddle | ✅ PR #3 | feat/phase-3-paddle | ✅ MERGED | ✅ APPROVED | ✅ VALIDATED |
 | 4 | Boll | ✅ PR #4 | feat/phase-4-ball | ✅ MERGED | ✅ APPROVED | ✅ VALIDATED |
-| 5 | Enkel Mursten | - | - | ⏳ AKTIV | - | - |
-| 6 | Hart Mursten | - | - | ⏳ VÄNTAR | - | - |
+| 5 | Enkel Mursten | ✅ PR #5 | feat/phase-5-bricks | ✅ MERGED | ✅ APPROVED | ✅ VALIDATED |
+| 6 | Hart Mursten | - | - | ⏳ AKTIV | - | - |
 | 7 | Double Ball Brick | - | - | ⏳ VÄNTAR | - | - |
 | 8 | Bonus Brick | - | - | ⏳ VÄNTAR | - | - |
 | 9 | Speedup Brick | - | - | ⏳ VÄNTAR | - | - |
@@ -22,8 +22,8 @@
 
 ## Status
 
-**Fas 4 av 15 KLAR.** ✅
+**Fas 5 av 15 KLAR.** ✅
 
-Kompletta faser: 4/15
+Kompletta faser: 5/15
 ---
 Timestamp: 2026-05-31
