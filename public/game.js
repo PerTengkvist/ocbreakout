@@ -38,19 +38,39 @@
   };
 
   /* =========================
-   * Brick constants
-   * ========================= */
-  const BRICK_ROWS = 6;
-  const BRICK_COLS = 8;
-  const BRICK_PADDING = 6;
-  const BRICK_TOP = 60;
-  const BRICK_COLORS = {
-    simple: '#AAAAAA',
-    tough: '#CC0000',
-    double: '#00AA00',
-    bonus: '#FFD700',
-    speedup: '#0066CC'
-  };
+    * Brick constants
+    * ========================= */
+   const BRICK_ROWS = 6;
+   const BRICK_COLS = 8;
+   const BRICK_PADDING = 6;
+   const BRICK_TOP = 60;
+   const BRICK_COLORS = {
+     simple: '#AAAAAA',
+     tough: '#CC0000',
+     double: '#00AA00',
+     bonus: '#FFD700',
+     speedup: '#0066CC'
+   };
+   
+   /* =========================
+    * Ball manager (phase 7)
+    * ========================= */
+   let balls = []; // all active balls
+   function spawnBall(x, y, spread) {
+     const angle = (Math.random() * 60 - 30) * Math.PI / 180;
+     const spd = Game.ball.speed * Game.speedMultiplier;
+     const newBall = {
+       x: x,
+       y: y,
+       vx: Math.sin(angle) * spd,
+       vy: -Math.cos(angle) * spd,
+       radius: Game.ball.radius,
+       speed: Game.ball.speed,
+       speedMultiplier: Game.speedMultiplier,
+       color: Game.ball.color
+     };
+     balls.push(newBall);
+   }
 
   /* =========================
    * Init
@@ -62,6 +82,7 @@
     setupInput();
     createBricks();
     resetBall();
+    balls = [Game.ball];
     Game.running = true;
     Game.lastTime = performance.now();
     requestAnimationFrame(gameLoop);
@@ -83,15 +104,27 @@
         const x = BRICK_PADDING + col * (brickWidth + BRICK_PADDING);
         const y = BRICK_TOP + row * (brickHeight + BRICK_PADDING);
 
-        // Simple brick as default for level 1
+        // Brick types: tough (rows 0-1), double (every 6th brick), simple (rest)
+        let type = 'simple';
+        let hp = 1;
+        let color = BRICK_COLORS.simple;
+        if (row < 2) {
+          type = 'tough';
+          hp = 3;
+          color = BRICK_COLORS.tough;
+        } else if ((row + col) % 7 === 0) {
+          type = 'double';
+          hp = 1;
+          color = BRICK_COLORS.double;
+        }
         const brick = {
           x: x,
           y: y,
           width: brickWidth,
           height: brickHeight,
-          type: 'simple',
-          hp: 1,
-          color: BRICK_COLORS.simple
+          type: type,
+          hp: hp,
+          color: color
         };
         Game.bricks.push(brick);
         idx++;
@@ -122,12 +155,19 @@
     Game.ball.vy = 0;
     Game.ballLaunched = false;
     Game.speedMultiplier = 1.0;
+    balls = [Game.ball];
   }
 
-  function launchBall() {
-    const angle = (Math.random() * 60 - 30) * Math.PI / 180;
-    Game.ball.vx = Math.sin(angle) * Game.ball.speed * Game.speedMultiplier;
-    Game.ball.vy = -Math.cos(angle) * Game.ball.speed * Game.speedMultiplier;
+  function launchBall(fromPaddle) {
+    if (fromPaddle === undefined) fromPaddle = true;
+    for (let bi = 0; bi < balls.length; bi++) {
+      const b = balls[bi];
+      const angle = (Math.random() * 60 - 30) * Math.PI / 180;
+      const spd = b.speed * Game.speedMultiplier;
+      b.vx = Math.sin(angle) * spd;
+      b.vy = -Math.cos(angle) * spd;
+      if (fromPaddle) b.y = Game.paddle.y - b.radius;
+    }
     Game.ballLaunched = true;
   }
 
@@ -162,9 +202,28 @@
 
   function update(dt) {
     handleInput(dt);
-    if (Game.ballLaunched) {
-      updateBall(dt);
-      checkCollisions();
+    if (!Game.ballLaunched || balls.length === 0) return;
+    // Update all balls
+    for (let bi = 0; bi < balls.length; bi++) updateSingleBall(balls[bi], dt);
+    checkAllCollisions();
+  }
+  
+  function updateSingleBall(ball, dt) {
+    ball.x += ball.vx * dt;
+    ball.y += ball.vy * dt;
+    
+    // Wall bounces
+    if (ball.x - ball.radius <= 0) {
+      ball.x = ball.radius;
+      ball.vx *= -1;
+    }
+    if (ball.x + ball.radius >= Game.canvas.width) {
+      ball.x = Game.canvas.width - ball.radius;
+      ball.vx *= -1;
+    }
+    if (ball.y - ball.radius <= 0) {
+      ball.y = ball.radius;
+      ball.vy *= -1;
     }
   }
 
@@ -180,88 +239,99 @@
     }
   }
 
-  function updateBall(dt) {
-    Game.ball.x += Game.ball.vx * dt;
-    Game.ball.y += Game.ball.vy * dt;
-  }
-
   /* =========================
-   * Collision detection
-   * ========================= */
-  function checkCollisions() {
-    // Väggar
-    if (Game.ball.x - Game.ball.radius <= 0) {
-      Game.ball.x = Game.ball.radius;
-      Game.ball.vx *= -1;
-    }
-    if (Game.ball.x + Game.ball.radius >= Game.canvas.width) {
-      Game.ball.x = Game.canvas.width - Game.ball.radius;
-      Game.ball.vx *= -1;
-    }
-    if (Game.ball.y - Game.ball.radius <= 0) {
-      Game.ball.y = Game.ball.radius;
-      Game.ball.vy *= -1;
-    }
-
-    // Paddle
-    if (
-      Game.ball.vy > 0 &&
-      Game.ball.y + Game.ball.radius >= Game.paddle.y &&
-      Game.ball.y + Game.ball.radius <= Game.paddle.y + Game.paddle.height &&
-      Game.ball.x >= Game.paddle.x &&
-      Game.ball.x <= Game.paddle.x + Game.paddle.width
-    ) {
-      const hitPos = (Game.ball.x - Game.paddle.x) / Game.paddle.width;
-      const angle = (hitPos - 0.5) * Math.PI * 0.6;
-      const speed = Game.ball.speed * Game.speedMultiplier;
-      Game.ball.vx = Math.sin(angle) * speed;
-      Game.ball.vy = -Math.cos(angle) * speed;
-      Game.ball.y = Game.paddle.y - Game.ball.radius;
-    }
-
-    // Brick collision
-    for (let i = Game.bricks.length - 1; i >= 0; i--) {
-      const brick = Game.bricks[i];
-      if (!brick || brick.hp <= 0) continue;
-
+    * Collision detection (multi-ball)
+    * ========================= */
+   function checkAllCollisions() {
+    // Paddle collision (per ball)
+    for (let bi = 0; bi < balls.length; bi++) {
+      const ball = balls[bi];
       if (
-        Game.ball.x + Game.ball.radius > brick.x &&
-        Game.ball.x - Game.ball.radius < brick.x + brick.width &&
-        Game.ball.y + Game.ball.radius > brick.y &&
-        Game.ball.y - Game.ball.radius < brick.y + brick.height
+        ball.vy > 0 &&
+        ball.y + ball.radius >= Game.paddle.y &&
+        ball.y + ball.radius <= Game.paddle.y + Game.paddle.height &&
+        ball.x >= Game.paddle.x &&
+        ball.x <= Game.paddle.x + Game.paddle.width
       ) {
-        // Reflection — which side?
-        const overlapLeft = (Game.ball.x + Game.ball.radius) - brick.x;
-        const overlapRight = (brick.x + brick.width) - (Game.ball.x - Game.ball.radius);
-        const overlapTop = (Game.ball.y + Game.ball.radius) - brick.y;
-        const overlapBottom = (brick.y + brick.height) - (Game.ball.y - Game.ball.radius);
-
-        const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
-        if (minOverlap === overlapTop || minOverlap === overlapBottom) {
-          Game.ball.vy *= -1;
-        } else {
-          Game.ball.vx *= -1;
-        }
-
-        // Destroy brick
-        brick.hp--;
-        if (brick.hp <= 0) {
-          Game.bricks.splice(i, 1);
-          // Poäng för enkel mursten
-          Game.score += 10;
-        }
-        break; // One brick per frame
+        const hitPos = (ball.x - Game.paddle.x) / Game.paddle.width;
+        const angle = (hitPos - 0.5) * Math.PI * 0.6;
+        const spd = (ball.speed || Game.ball.speed) * (ball.speedMultiplier || Game.speedMultiplier);
+        ball.vx = Math.sin(angle) * spd;
+        ball.vy = -Math.cos(angle) * spd;
+        ball.y = Game.paddle.y - ball.radius;
       }
     }
 
-    // Miss
-    if (Game.ball.y - Game.ball.radius >= Game.canvas.height) {
+    // Brick collision (per ball)
+    for (let bi = 0; bi < balls.length; bi++) {
+      const ball = balls[bi];
+      for (let i = Game.bricks.length - 1; i >= 0; i--) {
+        const brick = Game.bricks[i];
+        if (!brick || brick.hp <= 0) continue;
+
+        if (
+          ball.x + ball.radius > brick.x &&
+          ball.x - ball.radius < brick.x + brick.width &&
+          ball.y + ball.radius > brick.y &&
+          ball.y - ball.radius < brick.y + brick.height
+        ) {
+          const overlapLeft = (ball.x + ball.radius) - brick.x;
+          const overlapRight = (brick.x + brick.width) - (ball.x - ball.radius);
+          const overlapTop = (ball.y + ball.radius) - brick.y;
+          const overlapBottom = (brick.y + brick.height) - (ball.y - ball.radius);
+
+          const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+          if (minOverlap === overlapTop || minOverlap === overlapBottom) {
+            ball.vy *= -1;
+          } else {
+            ball.vx *= -1;
+          }
+
+          brick.hp--;
+          if (brick.hp <= 0) {
+            // Handle special brick types
+            if (brick.type === 'double') {
+              spawnBall(brick.x + brick.width / 2, brick.y, brick.width);
+            }
+            if (brick.type === 'tough') {
+              Game.score += 50;
+            } else if (brick.type === 'double') {
+              Game.score += 50;
+            } else {
+              Game.score += 10;
+            }
+            Game.bricks.splice(i, 1);
+          }
+          break; // One brick per ball per frame
+        }
+      }
+    }
+
+    // Check misses and remove dead balls (per ball)
+    for (let bi = balls.length - 1; bi >= 0; bi--) {
+      const ball = balls[bi];
+      if (ball.y - ball.radius >= Game.canvas.height) {
+        balls.splice(bi, 1);
+      }
+    }
+
+    // If no balls left, lose a life
+    if (balls.length === 0) {
       Game.lives--;
       if (Game.lives <= 0) {
         Game.lives = 0;
         Game.gameState = 'GAME_OVER';
       } else {
         resetBall();
+        // Launch the new ball if already launched
+        if (Game.ballLaunched) {
+          const angle = (Math.random() * 60 - 30) * Math.PI / 180;
+          const spd = Game.ball.speed * Game.speedMultiplier;
+          balls[0] = Game.ball;
+          balls[0].vx = Math.sin(angle) * spd;
+          balls[0].vy = -Math.cos(angle) * spd;
+          balls[0].speedMultiplier = Game.speedMultiplier;
+        }
       }
     }
   }
@@ -275,7 +345,14 @@
     // Render bricks
     for (const brick of Game.bricks) {
       if (brick.hp > 0) {
-        Game.ctx.fillStyle = brick.color;
+        // Hart brick — visuell återhämtning/blekning baserat på hp
+        let renderColor = brick.color;
+        if (brick.type === 'tough' && brick.hp < 3) {
+          const factor = brick.hp / 3;
+          // Blekna röd färg: #CC0000 → ljusare
+          renderColor = factor > 0.5 ? '#CC0000' : '#AA0000';
+        }
+        Game.ctx.fillStyle = renderColor;
         Game.ctx.fillRect(
           Math.round(brick.x),
           Math.round(brick.y),
@@ -294,15 +371,19 @@
       Math.round(Game.paddle.height)
     );
 
-    // Render ball
-    Game.ctx.beginPath();
-    Game.ctx.arc(
-      Math.round(Game.ball.x),
-      Math.round(Game.ball.y),
-      Math.round(Game.ball.radius),
-      0, Math.PI * 2
-    );
-    Game.ctx.fill();
+    // Render all balls
+    for (let bi = 0; bi < balls.length; bi++) {
+      const b = balls[bi];
+      Game.ctx.beginPath();
+      Game.ctx.arc(
+        Math.round(b.x),
+        Math.round(b.y),
+        Math.round(b.radius),
+        0, Math.PI * 2
+      );
+      Game.ctx.fillStyle = b.color || '#FFFFFF';
+      Game.ctx.fill();
+    }
 
     // Render HUD
     Game.ctx.fillStyle = '#000000';
