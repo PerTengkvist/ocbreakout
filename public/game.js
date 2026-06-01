@@ -1,4 +1,4 @@
-// Breakout Game — Game Loop, Paddle & Ball (Fas 2, 3, 4)
+// Breakout Game — Game Loop, Paddle, Ball & Bricks (Fas 2-5)
 
 (function() {
   'use strict';
@@ -32,34 +32,89 @@
       radius: 8,
       speed: 250,
       color: '#FFFFFF'
-    }
+    },
+
+    bricks: []
   };
 
-  // Initiera canvas
+  /* =========================
+   * Brick constants
+   * ========================= */
+  const BRICK_ROWS = 6;
+  const BRICK_COLS = 8;
+  const BRICK_PADDING = 6;
+  const BRICK_TOP = 60;
+  const BRICK_COLORS = {
+    simple: '#AAAAAA',
+    tough: '#CC0000',
+    double: '#00AA00',
+    bonus: '#FFD700',
+    speedup: '#0066CC'
+  };
+
+  /* =========================
+   * Init
+   * ========================= */
   function init() {
     Game.canvas = document.getElementById('gameCanvas');
     Game.ctx = Game.canvas.getContext('2d');
     resizeCanvas();
     setupInput();
+    createBricks();
     resetBall();
     Game.running = true;
     Game.lastTime = performance.now();
     requestAnimationFrame(gameLoop);
   }
 
-  // Uppdatera canvas dimensioner vid resize
+  /* =========================
+   * Brick creation
+   * ========================= */
+  function createBricks() {
+    Game.bricks = [];
+    const availWidth = Game.canvas.width - BRICK_PADDING * (BRICK_COLS + 1);
+    const brickWidth = availWidth / BRICK_COLS;
+    const brickHeight = 22;
+
+    let idx = 0;
+    const totalBricks = BRICK_ROWS * BRICK_COLS;
+    for (let row = 0; row < BRICK_ROWS; row++) {
+      for (let col = 0; col < BRICK_COLS; col++) {
+        const x = BRICK_PADDING + col * (brickWidth + BRICK_PADDING);
+        const y = BRICK_TOP + row * (brickHeight + BRICK_PADDING);
+
+        // Simple brick as default for level 1
+        const brick = {
+          x: x,
+          y: y,
+          width: brickWidth,
+          height: brickHeight,
+          type: 'simple',
+          hp: 1,
+          color: BRICK_COLORS.simple
+        };
+        Game.bricks.push(brick);
+        idx++;
+      }
+    }
+  }
+
+  /* =========================
+   * Resize
+   * ========================= */
   function resizeCanvas() {
     Game.canvas.width = window.innerWidth;
     Game.canvas.height = window.innerHeight;
     Game.paddle.height = Game.canvas.height * 0.02;
     Game.paddle.width = Math.max(80, Game.canvas.width * 0.15);
     Game.paddle.y = Game.canvas.height - 40;
-    if (!Game.ballLaunched) {
-      resetBall();
-    }
+    Game.ballLaunched = false;
+    resetBall();
   }
 
-  // Reset ball on paddle
+  /* =========================
+   * Ball controls
+   * ========================= */
   function resetBall() {
     Game.ball.x = Game.paddle.x + Game.paddle.width / 2;
     Game.ball.y = Game.paddle.y - Game.ball.radius;
@@ -69,15 +124,16 @@
     Game.speedMultiplier = 1.0;
   }
 
-  // Launch ball with ±30° angle from vertical
   function launchBall() {
-    const angle = (Math.random() * 60 - 30) * Math.PI / 180; // ±30°
+    const angle = (Math.random() * 60 - 30) * Math.PI / 180;
     Game.ball.vx = Math.sin(angle) * Game.ball.speed * Game.speedMultiplier;
     Game.ball.vy = -Math.cos(angle) * Game.ball.speed * Game.speedMultiplier;
     Game.ballLaunched = true;
   }
 
-  // Keyboard-input
+  /* =========================
+   * Input
+   * ========================= */
   function setupInput() {
     document.addEventListener('keydown', function(e) {
       if (e.key === ' ' || e.code === 'Space') {
@@ -92,7 +148,9 @@
     });
   }
 
-  // Game loop — update + render
+  /* =========================
+   * Game loop
+   * ========================= */
   function gameLoop(timestamp) {
     if (!Game.running) return;
     const dt = (timestamp - Game.lastTime) / 1000;
@@ -102,7 +160,6 @@
     requestAnimationFrame(gameLoop);
   }
 
-  // Update-steget — spellogik
   function update(dt) {
     handleInput(dt);
     if (Game.ballLaunched) {
@@ -111,7 +168,6 @@
     }
   }
 
-  // Hantera tangentbord-input för paddle
   function handleInput(dt) {
     if (Game.keys['ArrowLeft']) {
       Game.paddle.x -= Game.paddle.speed * dt;
@@ -124,30 +180,30 @@
     }
   }
 
-  // Update ball position
   function updateBall(dt) {
     Game.ball.x += Game.ball.vx * dt;
     Game.ball.y += Game.ball.vy * dt;
   }
 
-  // Kollisionsdetektion — vägg och paddle
+  /* =========================
+   * Collision detection
+   * ========================= */
   function checkCollisions() {
-    // Vänster vägg — invertera vx
+    // Väggar
     if (Game.ball.x - Game.ball.radius <= 0) {
       Game.ball.x = Game.ball.radius;
       Game.ball.vx *= -1;
     }
-    // Höger vägg — invertera vx
     if (Game.ball.x + Game.ball.radius >= Game.canvas.width) {
       Game.ball.x = Game.canvas.width - Game.ball.radius;
       Game.ball.vx *= -1;
     }
-    // Taket — invertera vy
     if (Game.ball.y - Game.ball.radius <= 0) {
       Game.ball.y = Game.ball.radius;
       Game.ball.vy *= -1;
     }
-    // Paddle-kollision
+
+    // Paddle
     if (
       Game.ball.vy > 0 &&
       Game.ball.y + Game.ball.radius >= Game.paddle.y &&
@@ -155,15 +211,50 @@
       Game.ball.x >= Game.paddle.x &&
       Game.ball.x <= Game.paddle.x + Game.paddle.width
     ) {
-      // Beräkna träffposition (0=vänster, 0.5=center, 1=höger)
       const hitPos = (Game.ball.x - Game.paddle.x) / Game.paddle.width;
-      const angle = (hitPos - 0.5) * Math.PI * 0.6; // ±54°
+      const angle = (hitPos - 0.5) * Math.PI * 0.6;
       const speed = Game.ball.speed * Game.speedMultiplier;
       Game.ball.vx = Math.sin(angle) * speed;
       Game.ball.vy = -Math.cos(angle) * speed;
       Game.ball.y = Game.paddle.y - Game.ball.radius;
     }
-    // Boll-miss — under paddeln
+
+    // Brick collision
+    for (let i = Game.bricks.length - 1; i >= 0; i--) {
+      const brick = Game.bricks[i];
+      if (!brick || brick.hp <= 0) continue;
+
+      if (
+        Game.ball.x + Game.ball.radius > brick.x &&
+        Game.ball.x - Game.ball.radius < brick.x + brick.width &&
+        Game.ball.y + Game.ball.radius > brick.y &&
+        Game.ball.y - Game.ball.radius < brick.y + brick.height
+      ) {
+        // Reflection — which side?
+        const overlapLeft = (Game.ball.x + Game.ball.radius) - brick.x;
+        const overlapRight = (brick.x + brick.width) - (Game.ball.x - Game.ball.radius);
+        const overlapTop = (Game.ball.y + Game.ball.radius) - brick.y;
+        const overlapBottom = (brick.y + brick.height) - (Game.ball.y - Game.ball.radius);
+
+        const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+        if (minOverlap === overlapTop || minOverlap === overlapBottom) {
+          Game.ball.vy *= -1;
+        } else {
+          Game.ball.vx *= -1;
+        }
+
+        // Destroy brick
+        brick.hp--;
+        if (brick.hp <= 0) {
+          Game.bricks.splice(i, 1);
+          // Poäng för enkel mursten
+          Game.score += 10;
+        }
+        break; // One brick per frame
+      }
+    }
+
+    // Miss
     if (Game.ball.y - Game.ball.radius >= Game.canvas.height) {
       Game.lives--;
       if (Game.lives <= 0) {
@@ -175,9 +266,24 @@
     }
   }
 
-  // Render-steget — ritning
+  /* =========================
+   * Render
+   * ========================= */
   function render() {
     Game.ctx.clearRect(0, 0, Game.canvas.width, Game.canvas.height);
+
+    // Render bricks
+    for (const brick of Game.bricks) {
+      if (brick.hp > 0) {
+        Game.ctx.fillStyle = brick.color;
+        Game.ctx.fillRect(
+          Math.round(brick.x),
+          Math.round(brick.y),
+          Math.round(brick.width),
+          Math.round(brick.height)
+        );
+      }
+    }
 
     // Render paddle
     Game.ctx.fillStyle = Game.paddle.color;
@@ -198,17 +304,15 @@
     );
     Game.ctx.fill();
 
-    // Render HUD — lives och score
+    // Render HUD
     Game.ctx.fillStyle = '#000000';
     Game.ctx.font = '16px Courier New';
     Game.ctx.fillText('Lives: ' + Game.lives, 10, 25);
     Game.ctx.fillText('Score: ' + Game.score, 10, 45);
   }
 
-  // Event listener för resize
   window.addEventListener('resize', resizeCanvas);
 
-  // Starta vid DOM-loaded
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
