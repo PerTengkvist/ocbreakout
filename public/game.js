@@ -55,22 +55,59 @@
    /* =========================
     * Ball manager (phase 7)
     * ========================= */
-   let balls = []; // all active balls
-   function spawnBall(x, y, spread) {
-     const angle = (Math.random() * 60 - 30) * Math.PI / 180;
-     const spd = Game.ball.speed * Game.speedMultiplier;
-     const newBall = {
-       x: x,
-       y: y,
-       vx: Math.sin(angle) * spd,
-       vy: -Math.cos(angle) * spd,
-       radius: Game.ball.radius,
-       speed: Game.ball.speed,
-       speedMultiplier: Game.speedMultiplier,
-       color: Game.ball.color
-     };
-     balls.push(newBall);
-   }
+    let balls = []; // all active balls
+    let coins = []; // falling bonus coins
+    const COIN_GRAVITY = 400; // pixels/s^2
+    const COIN_RADIUS = 8;
+    
+    function spawnBall(x, y, spread) {
+      const angle = (Math.random() * 60 - 30) * Math.PI / 180;
+      const spd = Game.ball.speed * Game.speedMultiplier;
+      const newBall = {
+        x: x,
+        y: y,
+        vx: Math.sin(angle) * spd,
+        vy: -Math.cos(angle) * spd,
+        radius: Game.ball.radius,
+        speed: Game.ball.speed,
+        speedMultiplier: Game.speedMultiplier,
+        color: Game.ball.color
+      };
+      balls.push(newBall);
+    }
+    
+    function spawnCoin(x, y) {
+      coins.push({
+        x: x,
+        y: y,
+        vy: 0,
+        vx: (Math.random() - 0.5) * 60,
+        radius: COIN_RADIUS,
+        color: BRICK_COLORS.bonus
+      });
+    }
+    
+    function updateCoins(dt) {
+      for (let i = coins.length - 1; i >= 0; i--) {
+        const c = coins[i];
+        c.vy += COIN_GRAVITY * dt;
+        c.x += c.vx * dt;
+        c.y += c.vy * dt;
+        
+        // Check paddle catch
+        if (c.y + c.radius >= Game.paddle.y && 
+            c.y - c.radius <= Game.paddle.y + Game.paddle.height &&
+            c.x + c.radius >= Game.paddle.x && 
+            c.x - c.radius <= Game.paddle.x + Game.paddle.width) {
+          Game.score += 200;
+          coins.splice(i, 1);
+        }
+        // Remove if off screen
+        else if (c.y - c.radius >= Game.canvas.height) {
+          coins.splice(i, 1);
+        }
+      }
+    }
 
   /* =========================
    * Init
@@ -104,7 +141,7 @@
         const x = BRICK_PADDING + col * (brickWidth + BRICK_PADDING);
         const y = BRICK_TOP + row * (brickHeight + BRICK_PADDING);
 
-        // Brick types: tough (rows 0-1), double (every 6th brick), simple (rest)
+        // Brick types
         let type = 'simple';
         let hp = 1;
         let color = BRICK_COLORS.simple;
@@ -112,10 +149,14 @@
           type = 'tough';
           hp = 3;
           color = BRICK_COLORS.tough;
-        } else if ((row + col) % 7 === 0) {
+        } else if ((row * BRICK_COLS + col) % 15 === 0) {
           type = 'double';
           hp = 1;
           color = BRICK_COLORS.double;
+        } else if ((row * BRICK_COLS + col) % 17 === 0) {
+          type = 'bonus';
+          hp = 1;
+          color = BRICK_COLORS.bonus;
         }
         const brick = {
           x: x,
@@ -203,6 +244,7 @@
   function update(dt) {
     handleInput(dt);
     if (!Game.ballLaunched || balls.length === 0) return;
+    updateCoins(dt);
     // Update all balls
     for (let bi = 0; bi < balls.length; bi++) updateSingleBall(balls[bi], dt);
     checkAllCollisions();
@@ -292,11 +334,15 @@
             // Handle special brick types
             if (brick.type === 'double') {
               spawnBall(brick.x + brick.width / 2, brick.y, brick.width);
+            } else if (brick.type === 'bonus') {
+              spawnCoin(brick.x + brick.width / 2, brick.y);
             }
             if (brick.type === 'tough') {
               Game.score += 50;
             } else if (brick.type === 'double') {
               Game.score += 50;
+            } else if (brick.type === 'bonus') {
+              Game.score += 10;
             } else {
               Game.score += 10;
             }
@@ -383,6 +429,22 @@
       );
       Game.ctx.fillStyle = b.color || '#FFFFFF';
       Game.ctx.fill();
+    }
+
+    // Render coins
+    for (const coin of coins) {
+      Game.ctx.beginPath();
+      Game.ctx.arc(
+        Math.round(coin.x),
+        Math.round(coin.y),
+        Math.round(coin.radius),
+        0, Math.PI * 2
+      );
+      Game.ctx.fillStyle = coin.color || '#FFD700';
+      Game.ctx.fill();
+      Game.ctx.strokeStyle = '#B8860B';
+      Game.ctx.lineWidth = 2;
+      Game.ctx.stroke();
     }
 
     // Render HUD
