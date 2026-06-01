@@ -6,8 +6,8 @@
 |------|------|-----|--------|--------|-----------|-----------|
 | 1 | Server & Projektstruktur | ✅ PR #1 | feat/phase-1-architecture | ✅ MERGED | ✅ APPROVED | ✅ VALIDATED |
 | 2 | Game Loop & Canvas | ✅ PR #2 | feat/phase-2-game-loop | ✅ MERGED | ✅ APPROVED | ✅ VALIDATED |
-| 3 | Paddle | - | - | ⏳ VÄNTAR | - | - |
-| 4 | Boll | - | - | ⏳ VÄNTAR | - | - |
+| 3 | Paddle | ✅ PR #3 | feat/phase-3-paddle | ✅ MERGED | ✅ APPROVED | ✅ VALIDATED |
+| 4 | Boll | - | - | ⏳ AKTIV | - | - |
 | 5 | Enkel Mursten | - | - | ⏳ VÄNTAR | - | - |
 | 6 | Hart Mursten | - | - | ⏳ VÄNTAR | - | - |
 | 7 | Double Ball Brick | - | - | ⏳ VÄNTAR | - | - |
@@ -22,21 +22,19 @@
 
 ## Senaste PR
 
-- PR: #2
-- Branch: feat/phase-2-game-loop
+- PR: #3
+- Branch: feat/phase-3-paddle
 - Status: MERGED ✅
-- Granskningskommentarer: 0 (all OK)
 
 ## Validering
 
 - Senaste: PASS ✅
-- Krav täckta: AR-01, AR-02, AR-03, NFR-01, GR-03 (5/Y)
-- Smoketester: 3/3 PASS
+- Krav täckta: AR-01, AR-02, AR-03, NFR-01, GR-03, UC-02 (6/Y)
 
 ## Status
 
-**Fas 2 av 15 KLAR.** 🎉
+**Fas 3 av 15 KLAR.** 🎉
 
-Kompletta faser: 2/15
+Kompletta faser: 3/15
 ---
 Timestamp: 2026-05-31
