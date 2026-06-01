@@ -5,7 +5,7 @@
 | Fase | Namn | PR | Branch | Status | Granskning | Validering |
 |------|------|-----|--------|--------|-----------|-----------|
 | 1 | Server & Projektstruktur | ✅ PR #1 | feat/phase-1-architecture | ✅ MERGED | ✅ APPROVED | ✅ VALIDATED |
-| 2 | Game Loop & Canvas | - | - | ⏳ VÄNTAR | - | - |
+| 2 | Game Loop & Canvas | ✅ PR #2 | feat/phase-2-game-loop | ✅ MERGED | ✅ APPROVED | ✅ VALIDATED |
 | 3 | Paddle | - | - | ⏳ VÄNTAR | - | - |
 | 4 | Boll | - | - | ⏳ VÄNTAR | - | - |
 | 5 | Enkel Mursten | - | - | ⏳ VÄNTAR | - | - |
@@ -22,21 +22,21 @@
 
 ## Senaste PR
 
-- PR: #1
-- Branch: feat/phase-1-architecture
+- PR: #2
+- Branch: feat/phase-2-game-loop
 - Status: MERGED ✅
 - Granskningskommentarer: 0 (all OK)
 
 ## Validering
 
 - Senaste: PASS ✅
-- Krav täckta: AR-01, AR-02, AR-03, NFR-01 (4/4)
-- Smoketester: 4/4 PASS
+- Krav täckta: AR-01, AR-02, AR-03, NFR-01, GR-03 (5/Y)
+- Smoketester: 3/3 PASS
 
 ## Status
 
-**Fas 1 av 15 KLAR.** 🎉
+**Fas 2 av 15 KLAR.** 🎉
 
-Kompletta faser: 1/15
+Kompletta faser: 2/15
 ---
 Timestamp: 2026-05-31
