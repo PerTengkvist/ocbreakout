@@ -1,13 +1,11 @@
 {
-  "branch": "feat/phase-1-architecture",
-  "pr": 1,
+  "branch": "feat/phase-2-game-loop",
+  "pr": 2,
   "comments": [],
-  "phase": 1,
-  "phaseName": "Server & Projektstruktur",
+  "phase": 2,
+  "phaseName": "Game Loop & Canvas",
   "reqTags": {
-    "AR-01": "PASS",
-    "AR-02": "PASS",
-    "AR-03": "PASS",
+    "GR-03": "PASS",
     "NFR-01": "PASS"
   },
   "tddCompliant": true,
