@@ -87,6 +87,17 @@
       });
     }
     
+    function applySpeedup(ball) {
+      ball.speedMultiplier = (ball.speedMultiplier || 1.0) * 1.1;
+    }
+    
+    function resetSpeedMultiplier() {
+      for (let bi = 0; bi < balls.length; bi++) {
+        balls[bi].speedMultiplier = 1.0;
+      }
+      Game.speedMultiplier = 1.0;
+    }
+    
     function updateCoins(dt) {
       for (let i = coins.length - 1; i >= 0; i--) {
         const c = coins[i];
@@ -149,14 +160,18 @@
           type = 'tough';
           hp = 3;
           color = BRICK_COLORS.tough;
-        } else if ((row * BRICK_COLS + col) % 15 === 0) {
-          type = 'double';
+        } else if ((row * BRICK_COLS + col) % 13 === 0) {
+          type = 'speedup';
           hp = 1;
-          color = BRICK_COLORS.double;
+          color = BRICK_COLORS.speedup;
         } else if ((row * BRICK_COLS + col) % 17 === 0) {
           type = 'bonus';
           hp = 1;
           color = BRICK_COLORS.bonus;
+        } else if ((row * BRICK_COLS + col) % 23 === 0) {
+          type = 'double';
+          hp = 1;
+          color = BRICK_COLORS.double;
         }
         const brick = {
           x: x,
@@ -258,14 +273,17 @@
     if (ball.x - ball.radius <= 0) {
       ball.x = ball.radius;
       ball.vx *= -1;
+      applySpeedup(ball);
     }
     if (ball.x + ball.radius >= Game.canvas.width) {
       ball.x = Game.canvas.width - ball.radius;
       ball.vx *= -1;
+      applySpeedup(ball);
     }
     if (ball.y - ball.radius <= 0) {
       ball.y = ball.radius;
       ball.vy *= -1;
+      applySpeedup(ball);
     }
   }
 
@@ -336,11 +354,18 @@
               spawnBall(brick.x + brick.width / 2, brick.y, brick.width);
             } else if (brick.type === 'bonus') {
               spawnCoin(brick.x + brick.width / 2, brick.y);
+            } else if (brick.type === 'speedup') {
+              // Speedup increases speed for every subsequent bounce
+              for (let bi = 0; bi < balls.length; bi++) {
+                balls[bi].speedMultiplier = (balls[bi].speedMultiplier || 1.0) * 1.1;
+              }
             }
             if (brick.type === 'tough') {
               Game.score += 50;
             } else if (brick.type === 'double') {
               Game.score += 50;
+            } else if (brick.type === 'speedup') {
+              Game.score += 250;
             } else if (brick.type === 'bonus') {
               Game.score += 10;
             } else {
@@ -364,6 +389,7 @@
     // If no balls left, lose a life
     if (balls.length === 0) {
       Game.lives--;
+      resetSpeedMultiplier();
       if (Game.lives <= 0) {
         Game.lives = 0;
         Game.gameState = 'GAME_OVER';
