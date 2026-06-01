@@ -4,34 +4,39 @@
 
 | Fase | Namn | PR | Branch | Status | Granskning | Validering |
 |------|------|-----|--------|--------|-----------|-----------|
-| 1 | Server & Projektstruktur | - | - | ⏳ | - | - |
-| 2 | Game Loop & Canvas | - | - | ⏳ | - | - |
-| 3 | Paddle | - | - | ⏳ | - | - |
-| 4 | Boll | - | - | ⏳ | - | - |
-| 5 | Enkel Mursten | - | - | ⏳ | - | - |
-| 6 | Hart Mursten | - | - | ⏳ | - | - |
-| 7 | Double Ball Brick | - | - | ⏳ | - | - |
-| 8 | Bonus Brick | - | - | ⏳ | - | - |
-| 9 | Speedup Brick | - | - | ⏳ | - | - |
-| 10 | Liv & Poäng | - | - | ⏳ | - | - |
-| 11 | Nivågenerering | - | - | ⏳ | - | - |
-| 12 | Ljudsystem | - | - | ⏳ | - | - |
-| 13 | Startskärm & HUD | - | - | ⏳ | - | - |
-| 14 | Meny + Game Over | - | - | ⏳ | - | - |
-| 15 | Polish & README | - | - | ⏳ | - | - |
+| 1 | Server & Projektstruktur | ✅ PR #1 | feat/phase-1-architecture | ✅ MERGED | ✅ APPROVED | ✅ VALIDATED |
+| 2 | Game Loop & Canvas | - | - | ⏳ VÄNTAR | - | - |
+| 3 | Paddle | - | - | ⏳ VÄNTAR | - | - |
+| 4 | Boll | - | - | ⏳ VÄNTAR | - | - |
+| 5 | Enkel Mursten | - | - | ⏳ VÄNTAR | - | - |
+| 6 | Hart Mursten | - | - | ⏳ VÄNTAR | - | - |
+| 7 | Double Ball Brick | - | - | ⏳ VÄNTAR | - | - |
+| 8 | Bonus Brick | - | - | ⏳ VÄNTAR | - | - |
+| 9 | Speedup Brick | - | - | ⏳ VÄNTAR | - | - |
+| 10 | Liv & Poäng | - | - | ⏳ VÄNTAR | - | - |
+| 11 | Nivågenerering | - | - | ⏳ VÄNTAR | - | - |
+| 12 | Ljudsystem | - | - | ⏳ VÄNTAR | - | - |
+| 13 | Startskärm & HUD | - | - | ⏳ VÄNTAR | - | - |
+| 14 | Meny + Game Over | - | - | ⏳ VÄNTAR | - | - |
+| 15 | Polish & README | - | - | ⏳ VÄNTAR | - | - |
 
 ## Senaste PR
 
-- PR: -
-- Branch: -
-- Status: Väntar
-- Granskningskommentarer: 0 st
+- PR: #1
+- Branch: feat/phase-1-architecture
+- Status: MERGED ✅
+- Granskningskommentarer: 0 (all OK)
 
 ## Validering
 
-- Senaste: INGEN -
-- Krav täckta: 0/Y
+- Senaste: PASS ✅
+- Krav täckta: AR-01, AR-02, AR-03, NFR-01 (4/4)
+- Smoketester: 4/4 PASS
 
 ## Status
 
-Kör fas 1 av 15...
+**Fas 1 av 15 KLAR.** 🎉
+
+Kompletta faser: 1/15
+---
+Timestamp: 2026-05-31
