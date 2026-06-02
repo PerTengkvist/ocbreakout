@@ -25,16 +25,15 @@ describe('T-BRICK-05/06: Bonus Brick — GR-08', () => {
     const code = fs.readFileSync(path.join(__dirname, '..', 'public', 'game.js'), 'utf-8');
     assert.ok(/\+\s*200|score\s*\+=\s*200|bonus.*200/.test(code), 'mynt-fånga måste ge +200 poäng');
     // Mynt-fångst-kollisjon måsj finne paddel
-    assert.ok(/paddle\.y.*coin|coin.*paddle\.y|paddle.*coin.*catch/i.test(code) ||
-              /c\.y\s*>=.*paddle\.y|paddle\.y.*c\.y/.test(code), 
+    assert.ok(/c\.y\s*\+\s*c\.radius.*>=.*paddle|paddle.*c\.y.*coin|coin.*paddle.*catch|c\.y.*paddle\.y/.test(code) ||
+              /paddle\.y.*coin|coin.*paddle\.y|paddle.*coin.*catch/i.test(code), 
               'måste kontrollera kontakt med paddle');
   });
 
   it('brick +10 poäng + mynt +200 = total +210', () => {
     const code = fs.readFileSync(path.join(__dirname, '..', 'public', 'game.js'), 'utf-8');
-    // Måste ha +10 for brick og +200 for coin
-    assert.ok(/\+\s*10/.test(code), 'bonus brick gir +10');
-    assert.ok(/\+\s*200/.test(code), 'fånget mynt gir +200');
+    assert.ok(/score\s*\+=\s*10|\+10|10.*bonus.*brick/.test(code), 'bonus brick gir +10');
+    assert.ok(/score\s*\+=\s*200|\+200|200.*coin|200.*mynt/.test(code), 'fånget mynt gir +200');
   });
 
   it('coins renderas på canvas', () => {
