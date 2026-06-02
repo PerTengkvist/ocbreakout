@@ -11,7 +11,7 @@
     keys: {},
     lives: 3,
     score: 0,
-    gameState: 'PLAYING',
+    gameState: 'SPLASH',
     ballLaunched: false,
     speedMultiplier: 1.0,
 
@@ -34,7 +34,12 @@
       color: '#FFFFFF'
     },
 
-    bricks: []
+    bricks: [],
+    currentLevel: 1,
+    levelComplete: false,
+    levelTransitioning: false,
+    levelTransitionAlpha: 0,
+    levelTransitionText: ''
   };
 
   /* =========================
@@ -50,6 +55,19 @@
      double: '#00AA00',
      bonus: '#FFD700',
      speedup: '#0066CC'
+   };
+
+   // Sound sound names
+   const SOUND_NAMES = {
+     simple: 'simple-brick',
+     tough: 'tough-brick',
+     double: 'double-brick',
+     bonus: 'bonus-brick',
+     speedup: 'speedup-brick',
+     paddle: 'paddle-hit',
+     bonusCatch: 'bonus-catch',
+     ballMiss: 'ball-miss',
+     gameOver: 'game-over'
    };
    
    /* =========================
@@ -87,6 +105,17 @@
       });
     }
     
+    function applySpeedup(ball) {
+      ball.speedMultiplier = Math.min((ball.speedMultiplier || 1.0) * 1.1, 3.0);
+    }
+    
+    function resetSpeedMultiplier() {
+      for (let bi = 0; bi < balls.length; bi++) {
+        balls[bi].speedMultiplier = 1.0;
+      }
+      Game.speedMultiplier = 1.0;
+    }
+    
     function updateCoins(dt) {
       for (let i = coins.length - 1; i >= 0; i--) {
         const c = coins[i];
@@ -97,10 +126,11 @@
         // Check paddle catch
         if (c.y + c.radius >= Game.paddle.y && 
             c.y - c.radius <= Game.paddle.y + Game.paddle.height &&
-            c.x + c.radius >= Game.paddle.x && 
-            c.x - c.radius <= Game.paddle.x + Game.paddle.width) {
+        c.x + c.radius >= Game.paddle.x && 
+        c.x - c.radius <= Game.paddle.x + Game.paddle.width) {
           Game.score += 200;
           coins.splice(i, 1);
+          if (SoundManager) SoundManager.playSound('bonus-catch');
         }
         // Remove if off screen
         else if (c.y - c.radius >= Game.canvas.height) {
@@ -116,6 +146,7 @@
     Game.canvas = document.getElementById('gameCanvas');
     Game.ctx = Game.canvas.getContext('2d');
     resizeCanvas();
+    if (ScreenManager) ScreenManager.loadHighScores();
     setupInput();
     createBricks();
     resetBall();
@@ -126,52 +157,54 @@
   }
 
   /* =========================
-   * Brick creation
+   * Brick creation / Level loading
    * ========================= */
-  function createBricks() {
-    Game.bricks = [];
-    const availWidth = Game.canvas.width - BRICK_PADDING * (BRICK_COLS + 1);
-    const brickWidth = availWidth / BRICK_COLS;
-    const brickHeight = 22;
+   function createBricks() {
+     const levelBricks = LevelGenerator.generateLevel(Game.currentLevel);
+     // Adjust brick widths for responsive canvas
+     const availWidth = Game.canvas.width - BRICK_PADDING * (BRICK_COLS + 1);
+     const brickWidth = availWidth / BRICK_COLS;
+     for (const brick of levelBricks) {
+       brick.width = brickWidth;
+       Game.bricks.push(brick);
+     }
+   }
 
-    let idx = 0;
-    const totalBricks = BRICK_ROWS * BRICK_COLS;
-    for (let row = 0; row < BRICK_ROWS; row++) {
-      for (let col = 0; col < BRICK_COLS; col++) {
-        const x = BRICK_PADDING + col * (brickWidth + BRICK_PADDING);
-        const y = BRICK_TOP + row * (brickHeight + BRICK_PADDING);
+   function loadLevel(level) {
+     Game.currentLevel = level;
+     Game.bricks = [];
+     Game.bricks = LevelGenerator.generateLevel(level);
+     const availWidth = Game.canvas.width - BRICK_PADDING * (BRICK_COLS + 1);
+     const brickWidth = availWidth / BRICK_COLS;
+     for (const brick of Game.bricks) {
+       brick.width = brickWidth;
+     }
+     resetBall();
+     coins = [];
+     balls = [Game.ball];
+     resetSpeedMultiplier();
+   }
 
-        // Brick types
-        let type = 'simple';
-        let hp = 1;
-        let color = BRICK_COLORS.simple;
-        if (row < 2) {
-          type = 'tough';
-          hp = 3;
-          color = BRICK_COLORS.tough;
-        } else if ((row * BRICK_COLS + col) % 15 === 0) {
-          type = 'double';
-          hp = 1;
-          color = BRICK_COLORS.double;
-        } else if ((row * BRICK_COLS + col) % 17 === 0) {
-          type = 'bonus';
-          hp = 1;
-          color = BRICK_COLORS.bonus;
-        }
-        const brick = {
-          x: x,
-          y: y,
-          width: brickWidth,
-          height: brickHeight,
-          type: type,
-          hp: hp,
-          color: color
-        };
-        Game.bricks.push(brick);
-        idx++;
-      }
-    }
-  }
+   function checkLevelComplete() {
+     if (Game.bricks.length === 0 && !Game.levelComplete) {
+       Game.levelComplete = true;
+        if (Game.currentLevel >= LevelGenerator.TOTAL_LEVELS) {
+          Game.gameState = 'VICTORY';
+          if (ScreenManager) ScreenManager.saveHighScore('PLAYER', Game.score);
+       } else {
+         // Show level transition
+         Game.levelTransitioning = true;
+         Game.levelTransitionAlpha = 1.0;
+         Game.levelTransitionText = 'Nivå ' + (Game.currentLevel + 1);
+         setTimeout(function() {
+           Game.currentLevel++;
+           Game.levelComplete = false;
+           loadLevel(Game.currentLevel);
+           Game.levelTransitioning = false;
+         }, 2000);
+       }
+     }
+   }
 
   /* =========================
    * Resize
@@ -213,21 +246,33 @@
   }
 
   /* =========================
-   * Input
-   * ========================= */
-  function setupInput() {
-    document.addEventListener('keydown', function(e) {
-      if (e.key === ' ' || e.code === 'Space') {
-        if (!Game.ballLaunched) {
-          launchBall();
+    * Input
+    * ========================= */
+   function setupInput() {
+      document.addEventListener('keydown', function(e) {
+        // Init sound on first interaction
+        if (SoundManager) SoundManager.init();
+        
+        if (e.key === ' ' || e.code === 'Space') {
+          if (Game.gameState === 'SPLASH') {
+            Game.gameState = 'MENU';
+          } else if (Game.gameState === 'MENU') {
+            Game.score = 0;
+            Game.lives = 3;
+            Game.gameState = 'PLAYING';
+            loadLevel(1);
+          } else if (Game.gameState === 'PLAYING') {
+            if (!Game.ballLaunched) launchBall();
+          } else if (Game.gameState === 'GAME_OVER' || Game.gameState === 'VICTORY') {
+            Game.gameState = 'MENU';
+          }
         }
-      }
-      Game.keys[e.key] = true;
-    });
-    document.addEventListener('keyup', function(e) {
-      Game.keys[e.key] = false;
-    });
-  }
+        Game.keys[e.key] = true;
+      });
+     document.addEventListener('keyup', function(e) {
+       Game.keys[e.key] = false;
+     });
+   }
 
   /* =========================
    * Game loop
@@ -241,14 +286,15 @@
     requestAnimationFrame(gameLoop);
   }
 
-  function update(dt) {
-    handleInput(dt);
-    if (!Game.ballLaunched || balls.length === 0) return;
-    updateCoins(dt);
-    // Update all balls
-    for (let bi = 0; bi < balls.length; bi++) updateSingleBall(balls[bi], dt);
-    checkAllCollisions();
-  }
+   function update(dt) {
+     handleInput(dt);
+     if (Game.gameState !== 'PLAYING') return;
+     if (!Game.ballLaunched || balls.length === 0) return;
+     updateCoins(dt);
+     // Update all balls
+     for (let bi = 0; bi < balls.length; bi++) updateSingleBall(balls[bi], dt);
+     checkAllCollisions();
+   }
   
   function updateSingleBall(ball, dt) {
     ball.x += ball.vx * dt;
@@ -258,14 +304,17 @@
     if (ball.x - ball.radius <= 0) {
       ball.x = ball.radius;
       ball.vx *= -1;
+      applySpeedup(ball);
     }
     if (ball.x + ball.radius >= Game.canvas.width) {
       ball.x = Game.canvas.width - ball.radius;
       ball.vx *= -1;
+      applySpeedup(ball);
     }
     if (ball.y - ball.radius <= 0) {
       ball.y = ball.radius;
       ball.vy *= -1;
+      applySpeedup(ball);
     }
   }
 
@@ -294,14 +343,15 @@
         ball.y + ball.radius <= Game.paddle.y + Game.paddle.height &&
         ball.x >= Game.paddle.x &&
         ball.x <= Game.paddle.x + Game.paddle.width
-      ) {
-        const hitPos = (ball.x - Game.paddle.x) / Game.paddle.width;
-        const angle = (hitPos - 0.5) * Math.PI * 0.6;
-        const spd = (ball.speed || Game.ball.speed) * (ball.speedMultiplier || Game.speedMultiplier);
-        ball.vx = Math.sin(angle) * spd;
-        ball.vy = -Math.cos(angle) * spd;
-        ball.y = Game.paddle.y - ball.radius;
-      }
+       ) {
+         const hitPos = (ball.x - Game.paddle.x) / Game.paddle.width;
+         const angle = (hitPos - 0.5) * Math.PI * 0.6;
+         const spd = (ball.speed || Game.ball.speed) * (ball.speedMultiplier || Game.speedMultiplier);
+         ball.vx = Math.sin(angle) * spd;
+         ball.vy = -Math.cos(angle) * spd;
+         ball.y = Game.paddle.y - ball.radius;
+         if (SoundManager) SoundManager.playSound('paddle-hit');
+       }
     }
 
     // Brick collision (per ball)
@@ -331,16 +381,26 @@
 
           brick.hp--;
           if (brick.hp <= 0) {
+            // Play brick hit sound
+            if (SoundManager) SoundManager.playSound(SOUND_NAMES[brick.type] || 'simple-brick');
+            
             // Handle special brick types
             if (brick.type === 'double') {
               spawnBall(brick.x + brick.width / 2, brick.y, brick.width);
             } else if (brick.type === 'bonus') {
               spawnCoin(brick.x + brick.width / 2, brick.y);
+            } else if (brick.type === 'speedup') {
+              // Speedup increases speed for every subsequent bounce
+              for (let bi = 0; bi < balls.length; bi++) {
+                balls[bi].speedMultiplier = Math.min((balls[bi].speedMultiplier || 1.0) * 1.1, 3.0);
+              }
             }
             if (brick.type === 'tough') {
               Game.score += 50;
             } else if (brick.type === 'double') {
               Game.score += 50;
+            } else if (brick.type === 'speedup') {
+              Game.score += 250;
             } else if (brick.type === 'bonus') {
               Game.score += 10;
             } else {
@@ -361,12 +421,19 @@
       }
     }
 
+    // Check level completion
+    checkLevelComplete();
+
     // If no balls left, lose a life
     if (balls.length === 0) {
       Game.lives--;
+      if (SoundManager) SoundManager.playSound('ball-miss');
+      resetSpeedMultiplier();
       if (Game.lives <= 0) {
         Game.lives = 0;
         Game.gameState = 'GAME_OVER';
+        if (SoundManager) SoundManager.playSound('game-over');
+        if (ScreenManager) ScreenManager.saveHighScore('PLAYER', Game.score);
       } else {
         resetBall();
         // Launch the new ball if already launched
@@ -385,74 +452,89 @@
   /* =========================
    * Render
    * ========================= */
-  function render() {
-    Game.ctx.clearRect(0, 0, Game.canvas.width, Game.canvas.height);
+   function render() {
+     Game.ctx.clearRect(0, 0, Game.canvas.width, Game.canvas.height);
 
-    // Render bricks
-    for (const brick of Game.bricks) {
-      if (brick.hp > 0) {
-        // Hart brick — visuell återhämtning/blekning baserat på hp
-        let renderColor = brick.color;
-        if (brick.type === 'tough' && brick.hp < 3) {
-          const factor = brick.hp / 3;
-          // Blekna röd färg: #CC0000 → ljusare
-          renderColor = factor > 0.5 ? '#CC0000' : '#AA0000';
-        }
-        Game.ctx.fillStyle = renderColor;
-        Game.ctx.fillRect(
-          Math.round(brick.x),
-          Math.round(brick.y),
-          Math.round(brick.width),
-          Math.round(brick.height)
-        );
-      }
-    }
+     if (Game.gameState === 'SPLASH') {
+       ScreenManager.drawSplashScreen(Game.ctx, Game.canvas);
+     } else if (Game.gameState === 'MENU') {
+       ScreenManager.drawMenuScreen(Game.ctx, Game.canvas);
+     } else if (Game.gameState === 'PLAYING') {
+       // Render bricks
+       for (const brick of Game.bricks) {
+         if (brick.hp > 0) {
+           // Hart brick — visuell återhämtning/blekning baserat på hp
+           let renderColor = brick.color;
+           if (brick.type === 'tough' && brick.hp < 3) {
+             const factor = brick.hp / 3;
+             // Blekna röd färg: #CC0000 → ljusare
+             renderColor = factor > 0.5 ? '#CC0000' : '#AA0000';
+           }
+           Game.ctx.fillStyle = renderColor;
+           Game.ctx.fillRect(
+             Math.round(brick.x),
+             Math.round(brick.y),
+             Math.round(brick.width),
+             Math.round(brick.height)
+           );
+         }
+       }
 
-    // Render paddle
-    Game.ctx.fillStyle = Game.paddle.color;
-    Game.ctx.fillRect(
-      Math.round(Game.paddle.x),
-      Math.round(Game.paddle.y),
-      Math.round(Game.paddle.width),
-      Math.round(Game.paddle.height)
-    );
+       // Render paddle
+       Game.ctx.fillStyle = Game.paddle.color;
+       Game.ctx.fillRect(
+         Math.round(Game.paddle.x),
+         Math.round(Game.paddle.y),
+         Math.round(Game.paddle.width),
+         Math.round(Game.paddle.height)
+       );
 
-    // Render all balls
-    for (let bi = 0; bi < balls.length; bi++) {
-      const b = balls[bi];
-      Game.ctx.beginPath();
-      Game.ctx.arc(
-        Math.round(b.x),
-        Math.round(b.y),
-        Math.round(b.radius),
-        0, Math.PI * 2
-      );
-      Game.ctx.fillStyle = b.color || '#FFFFFF';
-      Game.ctx.fill();
-    }
+       // Render all balls
+       for (let bi = 0; bi < balls.length; bi++) {
+         const b = balls[bi];
+         Game.ctx.beginPath();
+         Game.ctx.arc(
+           Math.round(b.x),
+           Math.round(b.y),
+           Math.round(b.radius),
+           0, Math.PI * 2
+         );
+         Game.ctx.fillStyle = b.color || '#FFFFFF';
+         Game.ctx.fill();
+       }
 
-    // Render coins
-    for (const coin of coins) {
-      Game.ctx.beginPath();
-      Game.ctx.arc(
-        Math.round(coin.x),
-        Math.round(coin.y),
-        Math.round(coin.radius),
-        0, Math.PI * 2
-      );
-      Game.ctx.fillStyle = coin.color || '#FFD700';
-      Game.ctx.fill();
-      Game.ctx.strokeStyle = '#B8860B';
-      Game.ctx.lineWidth = 2;
-      Game.ctx.stroke();
-    }
+       // Render coins
+       for (const coin of coins) {
+         Game.ctx.beginPath();
+         Game.ctx.arc(
+           Math.round(coin.x),
+           Math.round(coin.y),
+           Math.round(coin.radius),
+           0, Math.PI * 2
+         );
+         Game.ctx.fillStyle = coin.color || '#FFD700';
+         Game.ctx.fill();
+         Game.ctx.strokeStyle = '#B8860B';
+         Game.ctx.lineWidth = 2;
+         Game.ctx.stroke();
+       }
 
-    // Render HUD
-    Game.ctx.fillStyle = '#000000';
-    Game.ctx.font = '16px Courier New';
-    Game.ctx.fillText('Lives: ' + Game.lives, 10, 25);
-    Game.ctx.fillText('Score: ' + Game.score, 10, 45);
-  }
+       // Render HUD
+       Game.ctx.fillStyle = '#000000';
+       Game.ctx.font = '16px Courier New';
+       Game.ctx.fillText('Lives: ' + Game.lives, 10, 25);
+       Game.ctx.fillText('Score: ' + Game.score, 10, 45);
+     } else if (Game.gameState === 'GAME_OVER') {
+       ScreenManager.drawGameOverScreen(Game.ctx, Game.canvas);
+     } else if (Game.gameState === 'VICTORY') {
+       ScreenManager.drawVictoryScreen(Game.ctx, Game.canvas);
+     }
+
+     // Draw level overlay if transitioning
+     if (Game.levelTransitioning) {
+       ScreenManager.drawLevelOverlay(Game.ctx, Game.canvas, Game.levelTransitionAlpha, Game.levelTransitionText);
+     }
+   }
 
   window.addEventListener('resize', resizeCanvas);
 

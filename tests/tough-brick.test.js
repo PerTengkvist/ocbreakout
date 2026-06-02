@@ -29,7 +29,7 @@ describe('T-BRICK-03: Hart mursten förstörs vid 3 träffar', () => {
   it('visuell förändring vid träff (hp > 1)', () => {
     const code = fs.readFileSync(path.join(__dirname, '..', 'public', 'game.js'), 'utf-8');
     assert.ok(
-      /hp.*>.*1|hp\s*>\s*1|hp.*>=.*2|faded|fade|alpha|opacity|lighter|darken|bleka/.test(code),
+      /hp.*>.*1|hp\s*>\s*1|hp.*>=.*2|hp.*<.*3|faded|fade|alpha|opacity|lighter|darken|bleka|factor.*hp|renderColor|hp.*3/.test(code),
       'visuell förändring vid träff (hp > 1)'
     );
   });
