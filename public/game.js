@@ -76,7 +76,7 @@
     let balls = []; // all active balls
     let coins = []; // falling bonus coins
     const COIN_GRAVITY = 400; // pixels/s^2
-    const COIN_RADIUS = 8;
+    const COIN_RADIUS = 16;
     
     function spawnBall(x, y, spread) {
       const angle = (Math.random() * 60 - 30) * Math.PI / 180;
@@ -163,9 +163,12 @@
      const levelBricks = LevelGenerator.generateLevel(Game.currentLevel);
      // Adjust brick widths for responsive canvas
      const availWidth = Game.canvas.width - BRICK_PADDING * (BRICK_COLS + 1);
-     const brickWidth = availWidth / BRICK_COLS;
+     const brickWidth = (availWidth / BRICK_COLS) * 0.5;
      for (const brick of levelBricks) {
        brick.width = brickWidth;
+       brick.height = Math.round(brick.height * 0.5);
+       brick.x = Math.max(brick.width / 2, Math.min(brick.x, Game.canvas.width - brick.width * 1.5));
+       brick.y = Math.max(60, Math.min(brick.y, Game.canvas.height - brick.height - 40));
        Game.bricks.push(brick);
      }
    }
@@ -175,9 +178,12 @@
      Game.bricks = [];
      Game.bricks = LevelGenerator.generateLevel(level);
      const availWidth = Game.canvas.width - BRICK_PADDING * (BRICK_COLS + 1);
-     const brickWidth = availWidth / BRICK_COLS;
+     const brickWidth = (availWidth / BRICK_COLS) * 0.5;
      for (const brick of Game.bricks) {
        brick.width = brickWidth;
+       brick.height = Math.round(brick.height * 0.5);
+       brick.x = Math.max(brick.width / 2, Math.min(brick.x, Game.canvas.width - brick.width * 1.5));
+       brick.y = Math.max(60, Math.min(brick.y, Game.canvas.height - brick.height - 40));
      }
      resetBall();
      coins = [];
@@ -471,12 +477,20 @@
              renderColor = factor > 0.5 ? '#CC0000' : '#AA0000';
            }
            Game.ctx.fillStyle = renderColor;
-           Game.ctx.fillRect(
-             Math.round(brick.x),
-             Math.round(brick.y),
-             Math.round(brick.width),
-             Math.round(brick.height)
-           );
+            Game.ctx.fillRect(
+              Math.round(brick.x),
+              Math.round(brick.y),
+              Math.round(brick.width),
+              Math.round(brick.height)
+            );
+            Game.ctx.strokeStyle = '#000000';
+            Game.ctx.lineWidth = 1;
+            Game.ctx.strokeRect(
+              Math.round(brick.x),
+              Math.round(brick.y),
+              Math.round(brick.width),
+              Math.round(brick.height)
+            );
          }
        }
 
@@ -520,10 +534,11 @@
        }
 
        // Render HUD
-       Game.ctx.fillStyle = '#000000';
-       Game.ctx.font = '16px Courier New';
-       Game.ctx.fillText('Lives: ' + Game.lives, 10, 25);
-       Game.ctx.fillText('Score: ' + Game.score, 10, 45);
+        Game.ctx.fillStyle = '#000000';
+        Game.ctx.font = '16px Courier New';
+        Game.ctx.fillText('Lives: ' + Game.lives, 10, 25);
+        Game.ctx.fillText('Score: ' + Game.score, 10, 45);
+        Game.ctx.fillText('Bricks: ' + Game.bricks.length, 10, 65);
      } else if (Game.gameState === 'GAME_OVER') {
        ScreenManager.drawGameOverScreen(Game.ctx, Game.canvas);
      } else if (Game.gameState === 'VICTORY') {
