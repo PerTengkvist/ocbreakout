@@ -96,7 +96,7 @@
 
       ctx.font = '16px Courier New';
       ctx.fillStyle = '#CCCCCC';
-      ctx.fillText('Tryck SPACE for att gä tillbaka till meny', canvas.width / 2, canvas.height / 2 + 60);
+      ctx.fillText('Tryck SPACE för att gå tillbaka till menyn', canvas.width / 2, canvas.height / 2 + 60);
 
       ctx.textAlign = 'start';
       ctx.textBaseline = 'alphabetic';
@@ -111,7 +111,7 @@
       ctx.font = 'bold 48px Courier New';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('Dug Vunnit!', canvas.width / 2, canvas.height / 2 - 30);
+      ctx.fillText('Du vann!', canvas.width / 2, canvas.height / 2 - 30);
 
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '22px Courier New';
@@ -119,7 +119,7 @@
 
       ctx.font = '16px Courier New';
       ctx.fillStyle = '#CCCCCC';
-      ctx.fillText('Tryck SPACE for att gä tillbaka till meny', canvas.width / 2, canvas.height / 2 + 60);
+      ctx.fillText('Tryck SPACE för att gå tillbaka till menyn', canvas.width / 2, canvas.height / 2 + 60);
 
       ctx.textAlign = 'start';
       ctx.textBaseline = 'alphabetic';
@@ -147,6 +147,15 @@
       if (this.highScores.length > this.maxHighScores) {
         this.highScores = this.highScores.slice(0, this.maxHighScores);
       }
+      try { localStorage.setItem('breakout-highscores', JSON.stringify(this.highScores)); } catch (e) {}
+    },
+
+    // Load high scores from localStorage
+    loadHighScores() {
+      try {
+        const saved = localStorage.getItem('breakout-highscores');
+        if (saved) this.highScores = JSON.parse(saved);
+      } catch (e) {}
     }
   };
 

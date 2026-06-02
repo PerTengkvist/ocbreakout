@@ -106,7 +106,7 @@
     }
     
     function applySpeedup(ball) {
-      ball.speedMultiplier = (ball.speedMultiplier || 1.0) * 1.1;
+      ball.speedMultiplier = Math.min((ball.speedMultiplier || 1.0) * 1.1, 3.0);
     }
     
     function resetSpeedMultiplier() {
@@ -146,6 +146,7 @@
     Game.canvas = document.getElementById('gameCanvas');
     Game.ctx = Game.canvas.getContext('2d');
     resizeCanvas();
+    if (ScreenManager) ScreenManager.loadHighScores();
     setupInput();
     createBricks();
     resetBall();
@@ -187,8 +188,9 @@
    function checkLevelComplete() {
      if (Game.bricks.length === 0 && !Game.levelComplete) {
        Game.levelComplete = true;
-       if (Game.currentLevel >= LevelGenerator.TOTAL_LEVELS) {
-         Game.gameState = 'VICTORY';
+        if (Game.currentLevel >= LevelGenerator.TOTAL_LEVELS) {
+          Game.gameState = 'VICTORY';
+          if (ScreenManager) ScreenManager.saveHighScore('PLAYER', Game.score);
        } else {
          // Show level transition
          Game.levelTransitioning = true;
@@ -255,6 +257,8 @@
           if (Game.gameState === 'SPLASH') {
             Game.gameState = 'MENU';
           } else if (Game.gameState === 'MENU') {
+            Game.score = 0;
+            Game.lives = 3;
             Game.gameState = 'PLAYING';
             loadLevel(1);
           } else if (Game.gameState === 'PLAYING') {
@@ -388,7 +392,7 @@
             } else if (brick.type === 'speedup') {
               // Speedup increases speed for every subsequent bounce
               for (let bi = 0; bi < balls.length; bi++) {
-                balls[bi].speedMultiplier = (balls[bi].speedMultiplier || 1.0) * 1.1;
+                balls[bi].speedMultiplier = Math.min((balls[bi].speedMultiplier || 1.0) * 1.1, 3.0);
               }
             }
             if (brick.type === 'tough') {
@@ -429,6 +433,7 @@
         Game.lives = 0;
         Game.gameState = 'GAME_OVER';
         if (SoundManager) SoundManager.playSound('game-over');
+        if (ScreenManager) ScreenManager.saveHighScore('PLAYER', Game.score);
       } else {
         resetBall();
         // Launch the new ball if already launched
